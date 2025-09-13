@@ -1,0 +1,18 @@
+FROM gradle:9.5-jdk21 AS build
+WORKDIR /home/app
+
+## just copy the files required for dependency resolution to cache dependencies
+COPY ./build.gradle /home/app/build.gradle
+COPY ./settings.gradle /home/app/settings.gradle
+COPY ./gradle /home/app/gradle
+COPY ./src/main/java/com/DemoAplication.java /home/app/src/main/java/com/DemoAplication.java
+RUN gradle build --no-daemon || true
+
+## now copy the rest of the files
+COPY . /home/app
+RUN gradle build --no-daemon
+
+FROM openjdk:21-jdk-slim
+EXPOSE 8080
+COPY --from=build /home/app/build/libs/*.jar app.jar
+ENTRYPOINT ["sh", "-c", "java -jar /app.jar"]
